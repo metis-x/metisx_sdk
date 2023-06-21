@@ -1,0 +1,25 @@
+{
+    "tasks": [
+        {
+            "type": "cmake",
+            "label": "gtest_run",
+            "command": "build",
+            "targets": [
+                "all"
+            ],
+            "presentation": {
+                //"reveal": "silent",
+                "revealProblems": "onProblem",
+                //"close": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "build & test",
+            "dependsOn": "gtest_run",
+            "command": "${workspaceFolder}/out/build/vs-code/gaia_mu_ut",
+            "problemMatcher": []
+        }
+    ],
+    "version": "2.0.0"
+}

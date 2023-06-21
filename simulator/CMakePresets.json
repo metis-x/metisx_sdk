@@ -1,0 +1,33 @@
+{
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "vs-code",
+            "displayName": "vs-code debugging",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            }
+            
+        },
+        {
+            "name": "linux-default",
+            "displayName": "Linux Debug",
+            "description": "WSL(Linux용 Windows 하위 시스템) 또는 원격 Linux 시스템을 대상으로 지정합니다.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "Debug",
+              "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            },
+            "vendor": {
+              "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Linux" ] },
+              "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}" }
+            }
+        }
+    ]
+}
