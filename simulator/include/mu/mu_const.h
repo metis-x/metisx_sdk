@@ -1,15 +1,16 @@
 #pragma once
 
-#define MU_STAT_ENABLE						(1)
-
-static constexpr uint64_t DRAM_PER_THREAD   ((MB(4)));
+#define ADMIN_OUTSTANDING_CNT_ENABLE  (1)
+#define MASTER_OUTSTANDING_CNT_ENABLE (0)
+#define MU_DEBUG_STAT_ENABLE          (0)
+static constexpr uint64_t DRAM_PER_THREAD((MB(4)));
 
 enum MU_CSR
 {
-    MU_CSR_GPI_IN_BOUND     = 0,
-    MU_CSR_GPI_OUT_BOUND    = 1,   // RSVD
-    MU_CSR_MU_ID            = 2,
-    MU_CSR_ICOUNT           = 3,
+    MU_CSR_GPI_IN_BOUND  = 0,
+    MU_CSR_GPI_OUT_BOUND = 1, // RSVD
+    MU_CSR_MU_ID         = 2,
+    MU_CSR_ICOUNT        = 3,
 };
 
 enum MU_DEVICE_OPCODE

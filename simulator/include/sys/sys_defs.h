@@ -14,6 +14,4 @@
 
 #define CLEAR_L1S_TEST          (0)
 
-#define L1_TEST_SETTING         (1) // pool 8, region 9
-
 #endif

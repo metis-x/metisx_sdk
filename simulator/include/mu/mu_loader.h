@@ -60,8 +60,8 @@ void invdCache(void);
                 MuHeader muHeader(header);                                 \
                 if (muHeader.muOpcode == MU_DEVICE_OPCODE_INVALID_L1C)     \
                 {                                                          \
-                    invdL1Pool(L1_POOL2_TASK_OUTPUT);                      \
-                    invdL1Pool(L1_POOL3_HOST_HEAP);                        \
+                    invdL1Pool(L1_POOL6_TASK_OUTPUT);                      \
+                    invdL1Pool(L1_POOL7_HOST_HEAP);                        \
                     type = MU_DEVICE_OPCODE_INVALID_L1C;                   \
                 }                                                          \
                 else                                                       \

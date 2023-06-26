@@ -18,10 +18,22 @@ inline uint64_t GET_REMAP_ADDR(uint64_t addr, MuId_t muId)
     // This function only works on slave mu
     uint64_t ramapAddr = addr;
 
+    #if _SIM_ == 0
+
+    uint64_t header;
+    __getCsr(MU_CSR_MU_ID, header);
+    MuHeader muHeader(header);
     uint64_t threadId = muId.threadId;
     uint64_t slaveMuId = muId.internalMuId;
     uint64_t clusterId = muId.clusterId;
     uint64_t subId = muId.subId;
+    #else  
+    uint64_t threadId = muId.threadId;
+    uint64_t slaveMuId = muId.internalMuId;
+    uint64_t clusterId = muId.clusterId;
+    uint64_t subId = muId.subId;
+    #endif
+
 
     uint64_t vClusterId = GET_REG32(MEM_START(DDR_CTRL_INFO) + offsetof(DdrCtrlInfo_t, virtualClusterIdList) + sizeof(uint32_t) * (clusterId + subId * MAX_CLUSTER_PER_SUB));
 
@@ -73,18 +85,43 @@ inline void dmbL1(void)
     SET_REG((L1_DMB_ADDR | MASK_L0_SKIP_AGGR), 1/*any value*/);
 }
 
+inline uint64_t _getVirtualClusterId(void)
+{
+    #if (_SIM_ == 0)
+    uint64_t muId;
+    __getCsr(MU_CSR_MU_ID, muId);
+    MuHeader muHeader(muId);
+
+    uint64_t clusterId = muHeader.clusterId;
+    uint64_t subId = muHeader.subId;
+
+    uint64_t vClusterId = GET_REG32(MEM_START(DDR_CTRL_INFO) + offsetof(DdrCtrlInfo_t, virtualClusterIdList) 
+                            + sizeof(uint32_t) * (clusterId + subId * MAX_CLUSTER_PER_SUB));
+
+    return vClusterId;
+    #endif
+}
+
 inline uint64_t _getAddrOnL1Pool(uint64_t pool)
 {
     switch (pool)
     {
     case L1_POOL0_MU_DATA_0:
-        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU0));
+        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU0)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
     case L1_POOL1_MU_DATA_1:
-        return (MEM_START(DDR_TASK_INPUT));
-    case L1_POOL2_TASK_OUTPUT:
-        return (MEM_START(DDR_TASK_OUTPUT));
-    case L1_POOL3_HOST_HEAP:
-        return (MEM_START(DDR_HOST_HEAP));
+        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU2)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
+    case L1_POOL2_MU_DATA_2:
+        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU4)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
+    case L1_POOL3_MU_DATA_3:
+        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU6)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
+    case L1_POOL4_MU_DATA_4:
+        return (MEM_START(DDR_SLAVE_MEM_CLST0_MU8)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
+    case L1_POOL5_TASK_INPUT:
+        return MEM_START(DDR_TASK_INPUT);
+    case L1_POOL6_TASK_OUTPUT:
+        return MEM_START(DDR_TASK_OUTPUT);
+    case L1_POOL7_HOST_HEAP:
+        return MEM_START(DDR_HOST_HEAP);
     default:
         return 0;
     }

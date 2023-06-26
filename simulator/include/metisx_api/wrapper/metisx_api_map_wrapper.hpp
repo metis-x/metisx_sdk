@@ -5,6 +5,8 @@
 #include "../util/metisx_exception.hpp"
 #include <type_traits>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 namespace metisx
 {
@@ -58,6 +60,12 @@ inline bool isOutputArg(size_t entryType)
     return (entryType >> 1) & 0x1;
 }
 
+inline void* increasePtrBySize(void* ptr, size_t size)
+{
+    uint64_t ptrAddress = reinterpret_cast<uint64_t>(ptr);
+    ptrAddress += size;
+    return reinterpret_cast<void*>(ptrAddress);
+}
 template <typename ARG>
 bool isPointer(ARG& arg)
 {
@@ -103,7 +111,7 @@ size_t getInputBufferSize(ARG& arg)
     size_t entrySize;
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
         entrySize                        = mxMallocHeader->entrySize;
 
         if (isInputArg(mxMallocHeader->entryType))
@@ -132,7 +140,7 @@ size_t getInputBufferSize(ARG& arg, ARGS&... args)
     size_t entrySize;
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
         entrySize                        = mxMallocHeader->entrySize;
 
         if (isInputArg(mxMallocHeader->entryType))
@@ -150,6 +158,7 @@ size_t getInputBufferSize(ARG& arg, ARGS&... args)
     }
     else
     {
+        // constant
         entrySize = sizeof(size_t);
     }
 
@@ -161,7 +170,7 @@ size_t getOutputBufferSize(ARG& arg)
 {
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
         if (isInputArg(mxMallocHeader->entryType))
         {
             return 0;
@@ -181,7 +190,7 @@ size_t getOutputBufferSize(ARG& arg, ARGS&... args)
     size_t entrySize = 0;
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
         if (isInputArg(mxMallocHeader->entryType))
         {
             return getOutputBufferSize(args...);
@@ -200,31 +209,35 @@ void setupArg(metisx::api::wrapper::Task* taskPtr, void* hostTmpBuf, uint64_t in
 {
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
+        
+        size_t entrySize = mxMallocHeader->entrySize;
+        size_t entryType = mxMallocHeader->entryType;
+        void*  hostArgPtr = increasePtrBySize(reinterpret_cast<void*>(arg), (idx * entrySize));
 
-        uint64_t hostArgAddr = ((uint64_t)arg + idx * mxMallocHeader->entrySize);
-
-        if (isOutputArg(mxMallocHeader->entryType))
+        if (isOutputArg(entryType))
         {
-            if (isInputArg(mxMallocHeader->entryType))
+            if (isInputArg(entryType))
             {
                 // in/out arg
-                memcpy((void*)hostTmpBuf, (void*)&inputBufferAddr, mxMallocHeader->entrySize);
-                memcpy((void*)((uint64_t)hostTmpBuf + inputBufferOffset), (void*)hostArgAddr, mxMallocHeader->entrySize);
+                void* inputBufferPtr = reinterpret_cast<void*>(&inputBufferAddr);
+                memcpy(hostTmpBuf, inputBufferPtr, entrySize);
+                memcpy(increasePtrBySize(hostTmpBuf, inputBufferOffset), hostArgPtr, entrySize);
 
                 taskPtr->pushToInOutBufQueue(inputBufferAddr);
             }
             else
             {
                 // output only ARG
-                memcpy((void*)hostTmpBuf, (void*)&outputBufferAddr, sizeof(uint64_t));
-                outputBufferAddr += mxMallocHeader->entrySize;
+                void* outputBufferPtr = reinterpret_cast<void*>(outputBufferAddr);
+                memcpy(hostTmpBuf, outputBufferPtr, sizeof(uint64_t));
+                outputBufferAddr += entrySize;
             }
         }
         else
         {
             // is Input only Arg
-            memcpy((void*)hostTmpBuf, (void*)hostArgAddr, mxMallocHeader->entrySize);
+            memcpy(hostTmpBuf, hostArgPtr, entrySize);
         }
     }
     else
@@ -238,41 +251,45 @@ void setupArg(metisx::api::wrapper::Task* taskPtr, void* hostTmpBuf, uint64_t in
 {
     if (isPointer(arg))
     {
-        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta((void*)arg);
+        mxMallocHeader_t* mxMallocHeader = _getMxMallocMeta(reinterpret_cast<void*>(arg));
+        size_t entrySize = mxMallocHeader->entrySize;
+        size_t entryType = mxMallocHeader->entryType;
 
-        uint64_t hostArgAddr = ((uint64_t)arg + idx * mxMallocHeader->entrySize);
+        void*  hostArgPtr = increasePtrBySize(reinterpret_cast<void*>(arg), (idx * entrySize));
 
-        if (isOutputArg(mxMallocHeader->entryType))
+        if (isOutputArg(entryType))
         {
-            if (isInputArg(mxMallocHeader->entryType))
+            if (isInputArg(entryType))
             {
                 // in/out arg
-                memcpy((void*)hostTmpBuf, (void*)&inputBufferAddr, mxMallocHeader->entrySize);
-                memcpy((void*)((uint64_t)hostTmpBuf + inputBufferOffset), (void*)hostArgAddr, mxMallocHeader->entrySize);
+                void* inputBufferPtr = reinterpret_cast<void*>(&inputBufferAddr);
+                memcpy(hostTmpBuf, inputBufferPtr, sizeof(void*));
+                memcpy(increasePtrBySize(hostTmpBuf, inputBufferOffset), hostArgPtr, entrySize);
 
                 taskPtr->pushToInOutBufQueue(inputBufferAddr);
 
-                inputBufferAddr += mxMallocHeader->entrySize;
-                inputBufferOffset += mxMallocHeader->entrySize;
+                inputBufferAddr += entrySize;
+                inputBufferOffset += entrySize;
             }
             else
             {
                 // output only ARG
-                memcpy((void*)hostTmpBuf, (void*)&outputBufferAddr, sizeof(uint64_t));
-                outputBufferAddr += mxMallocHeader->entrySize;
+                void* outputBufferPtr = reinterpret_cast<void*>(outputBufferAddr);
+                memcpy(hostTmpBuf, outputBufferPtr, sizeof(uint64_t));
+                outputBufferAddr += entrySize;
             }
         }
         else
         {
             // is Input only Arg
-            memcpy((void*)hostTmpBuf, (void*)hostArgAddr, mxMallocHeader->entrySize);
+            memcpy(hostTmpBuf,  hostArgPtr, entrySize);
         }
     }
     else
     {
         memcpy(hostTmpBuf, (void*)&arg, sizeof(arg));
     }
-    hostTmpBuf = (void*)((uint64_t)hostTmpBuf + sizeof(size_t));
+    hostTmpBuf = increasePtrBySize(hostTmpBuf, sizeof(size_t));
     setupArg(taskPtr, hostTmpBuf, inputBufferOffset, inputBufferAddr, outputBufferAddr, idx, args...);
 }
 
@@ -315,12 +332,11 @@ void getOutput(metisx::api::wrapper::Task* taskPtr, void* outputBuf, size_t idx,
     }
     getOutput(taskPtr, outputBuf, idx, args...);
 }
-
+void  mxMapYield();
 } // namespace detail
 
 void* mxMallocDecl(uint64_t entrySize, uint64_t entryCount, uint64_t type);
 void  mxFreeDecl(void* address);
-
 template <typename String, typename... ARGS>
 void mxMap(const String& fileName, ARGS... args)
 {
@@ -352,16 +368,18 @@ void mxMap(const String& fileName, ARGS... args)
     size_t argSize           = nargs * sizeof(size_t);
     size_t taskInputBufSize  = detail::getInputBufferSize(args...);
     size_t taskOutputBufSize = detail::getOutputBufferSize(args...);
-    size_t taskIssueCount    = 0;
-    size_t taskDoneCount     = 0;
+    uint64_t taskDoneCount     = 0;
+    uint64_t taskIssueCount    = 0;
 
     while (taskDoneCount != taskCount)
     {
+        bool checkSleep = true;
         while (taskIssueCount < taskCount)
         {
             auto task = new metisx::api::wrapper::Task();
-            bool ret  = task->init(jobId, 0);
-            if (!ret)
+            ssize_t ret  = task->init(jobId, false);
+          
+            if (ret == static_cast<ssize_t>(TaskInitStatus::Fail))
             {
                 delete task;
                 break;
@@ -382,7 +400,8 @@ void mxMap(const String& fileName, ARGS... args)
 
                 tempInputBuf = malloc(taskInputBufSize);
                 if (!tempInputBuf)
-                {
+                {               
+                    free(tempInputBuf);
                     delete task;
                     break;
                 }
@@ -392,17 +411,18 @@ void mxMap(const String& fileName, ARGS... args)
                     taskOutputBufPtr = task->allocTaskBuffer(taskOutputBufSize, static_cast<int>(detail::TaskRegion::Output));
                     if (!taskOutputBufPtr)
                     {
+                        free(tempInputBuf);
                         delete task;
                         break;
                     }
                 }
 
-                detail::setupArg(task, tempInputBuf, argSize, (uint64_t)taskInputBufPtr + argSize, (uint64_t)taskOutputBufPtr, taskIssueCount, args...);
+                detail::setupArg(task, tempInputBuf, argSize, reinterpret_cast<uint64_t>(taskInputBufPtr) + argSize, reinterpret_cast<uint64_t>(taskOutputBufPtr), taskIssueCount, args...);
                 task->loadTaskCmd(tempInputBuf, 0, taskInputBufSize, taskInputBufPtr, static_cast<int>(detail::TaskRegion::Input), nargs);
                 free(tempInputBuf);
             }
-
-            task->registerTaskTag((uint64_t)taskIssueCount);
+            checkSleep = false;
+            task->registerTaskTag(taskIssueCount);
             async_executor->enqueueTask(task, 0);
             taskIssueCount++;
         }
@@ -430,7 +450,8 @@ void mxMap(const String& fileName, ARGS... args)
                         detail::getOutput(doneTask, nullptr, taskIdx, args...);
                     }
                 }
-
+                
+                checkSleep = false;
                 delete doneTask;
                 taskDoneCount++;
             }
@@ -438,6 +459,10 @@ void mxMap(const String& fileName, ARGS... args)
             {
                 break;
             }
+        }
+        if (checkSleep)
+        {
+            detail::mxMapYield();
         }
     }
 
@@ -450,6 +475,10 @@ void mxMap(const String& fileName)
 {
     mxMap(fileName, nullptr);
 }
+
+
+
+
 
 } // namespace wrapper
 } // namespace api

@@ -2,7 +2,6 @@
 // Created by jaewan on 22. 6. 7.
 //
 #include "mu.h"
-
 extern const uint64_t _textEnd;
 extern const uint64_t _sramSize;
 
@@ -28,7 +27,7 @@ const uint64_t DEBUG_LOG_START_ADDR = 0x900100000ull + 0x80000ull;
 const uint64_t DEBUG_LOG_SIZE       = 0x1000ull;
 
 #define ENABLE_MPU                   (0)
-#define ENABLE_HOST_DEBUG_BY_TASK_ID (1)
+#define ENABLE_HOST_DEBUG_BY_TASK_ID (0)
 #define ENABLE_HOST_DEBUG_BY_MU_ID   (0)
 
 inline void copyDataSection(uint64_t* dst, uint64_t* dstEnd, uint64_t* src)
@@ -131,7 +130,7 @@ void loader(uint64_t muType, bool readOnlyLoad)
 void setStartDebugLog(MuHeader muHeader)
 {
 #if (_SIM_ == 0)
-    #if (ENABLE_HOST_DEBUG_BY_TASK_ID == 1)
+    #if (MU_DEBUG_STAT_ENABLE && ENABLE_HOST_DEBUG_BY_TASK_ID)
     {
         uint64_t         curCycleCnt;
         MxTaskDbgInfo_t* debugInfoByTask = getTaskDbgInfoByHeader(muHeader);
@@ -146,7 +145,7 @@ void setStartDebugLog(MuHeader muHeader)
     }
     #endif
 
-    #if (ENABLE_HOST_DEBUG_BY_MU_ID == 1)
+    #if (MU_DEBUG_STAT_ENABLE && ENABLE_HOST_DEBUG_BY_MU_ID)
     {
         uint64_t       curCycleCnt;
         uint64_t       logId           = (muHeader.subId << 7) | (muHeader.clusterId << 5) | (muHeader.internalMuId << 2) | (muHeader.threadId);
@@ -166,7 +165,7 @@ void setStartDebugLog(MuHeader muHeader)
 void setEndDebugLog(MuHeader muHeader)
 {
 #if (_SIM_ == 0)
-    #if (ENABLE_HOST_DEBUG_BY_TASK_ID == 1)
+    #if (MU_DEBUG_STAT_ENABLE && ENABLE_HOST_DEBUG_BY_TASK_ID)
     {
         uint64_t         execCycleCount;
         MxTaskDbgInfo_t* debugInfoByTask = getTaskDbgInfoByHeader(muHeader);
@@ -180,7 +179,7 @@ void setEndDebugLog(MuHeader muHeader)
     }
     #endif
 
-    #if (ENABLE_HOST_DEBUG_BY_MU_ID == 1)
+    #if (MU_DEBUG_STAT_ENABLE && ENABLE_HOST_DEBUG_BY_MU_ID)
     {
         uint64_t       curCycleCnt;
         uint64_t       logId           = (muHeader.subId << 7) | (muHeader.clusterId << 5) | (muHeader.internalMuId << 2) | (muHeader.threadId);
@@ -196,11 +195,10 @@ void setEndDebugLog(MuHeader muHeader)
 void setMpu(MuHeader muHeader)
 {
 #if (_SIM_ == 0 && ENABLE_MPU == 1)
-    const uint32_t MPU_THREAD0_CHECKER_ON            = 0x0A0;
     const uint32_t MPU_THREAD0_ERROR_OFFSET_END0     = 0x0C0;
     const uint32_t MPU_THREAD0_ERROR_OFFSET_START1   = 0x0C8;
-    const uint32_t MPU_THREAD0_CHECKER_REG_SIZE      = 0x08;
     const uint32_t MPU_THREAD0_ERROR_OFFSET_REG_SIZE = 0x10;
+    const uint32_t MU_CSR_MPU_THREAD0_CHECKER_ON_OFFSET = 0xA0;
 
     uint64_t     cBusBaseAddr = MEM_START(MTS_SUB0);
     uint64_t     checkerThreadOffset;
@@ -210,28 +208,27 @@ void setMpu(MuHeader muHeader)
     uint64_t     dummy;
     MxTaskCmd_t* taskInfo = getTaskCmdByHeader(muHeader);
 
+    cBusBaseAddr += MEM_SIZE(MTS_CORE0) * muHeader.mtsCoreId;
     cBusBaseAddr += MEM_SIZE(MTS_SUB0) * muHeader.subId;
     cBusBaseAddr += MEM_SIZE(CLST0) * muHeader.clusterId;
     cBusBaseAddr += MEM_SIZE(MU_S0_CTRL) * muHeader.internalMuId;
 
-    checkerThreadOffset     = MPU_THREAD0_CHECKER_REG_SIZE * muHeader.threadId;
-    errorOffsetThreadOffset = MPU_THREAD0_ERROR_OFFSET_REG_SIZE * muHeader.threadId;
+    checkerThreadOffset     = sizeof(uint64_t) * muHeader.threadId;
 
-    uint64_t taskStartAddr = taskInfo->taskBufInfo.inputParamAddr;
-    uint64_t taskEndAddr   = ALIGN_UP((taskStartAddr + taskInfo->taskBufInfo.inputParamSize), KB(4));
-    __cwrite((cBusBaseAddr + MPU_THREAD0_CHECKER_ON + checkerThreadOffset), 0);
-    __cwrite((cBusBaseAddr + MPU_THREAD0_ERROR_OFFSET_END0 + errorOffsetThreadOffset), (taskStartAddr >> 12));
-    __cwrite((cBusBaseAddr + MPU_THREAD0_ERROR_OFFSET_START1 + errorOffsetThreadOffset), (taskEndAddr >> 12));
-    __cwrite((cBusBaseAddr + MPU_THREAD0_CHECKER_ON + checkerThreadOffset), 1);
-    __cread((cBusBaseAddr + MPU_THREAD0_CHECKER_ON + checkerThreadOffset), dummy);
+    __cwrite((cBusBaseAddr + MU_CSR_MPU_THREAD0_CHECKER_ON_OFFSET + checkerThreadOffset), 0);
+    // errorOffsetThreadOffset = MPU_THREAD0_ERROR_OFFSET_REG_SIZE * muHeader.threadId;
+    // uint64_t taskStartAddr = taskInfo->taskBufInfo.inputParamAddr;
+    // uint64_t taskEndAddr   = ALIGN_UP((taskStartAddr + taskInfo->taskBufInfo.inputParamSize), KB(4));
+    // __cwrite((cBusBaseAddr + MPU_THREAD0_ERROR_OFFSET_END0 + errorOffsetThreadOffset), (taskStartAddr >> 12));
+    // __cwrite((cBusBaseAddr + MPU_THREAD0_ERROR_OFFSET_START1 + errorOffsetThreadOffset), (taskEndAddr >> 12));
+    __cwrite((cBusBaseAddr + MU_CSR_MPU_THREAD0_CHECKER_ON_OFFSET + checkerThreadOffset), 1);
+    __cread((cBusBaseAddr + MU_CSR_MPU_THREAD0_CHECKER_ON_OFFSET + checkerThreadOffset), dummy);
 #endif
 }
 
 void invdCache(void)
 {
     invdL0Pool(L0_POOL1_DDR_HOST_DATA);
-#if (TASK_INPUT_L1S_CACHE_ON == 1)
-    invdL1Pool(L1_POOL1_MU_DATA_1);
-#endif
-    flushL1Pool(L1_POOL2_TASK_OUTPUT);
+    invdL1Pool(L1_POOL5_TASK_INPUT);
+    flushL1Pool(L1_POOL6_TASK_OUTPUT);
 }

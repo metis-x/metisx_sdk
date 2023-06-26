@@ -30,18 +30,58 @@ class Task
     private:
         typedef struct
         {
-                void*    bufAddr;
-                uint64_t bufSize;
+                uint64_t inputParamAddr;
+                uint64_t inputParamSize;
+                uint64_t outputBufAddr;
+                uint64_t outputBufSize;
         } TaskBufInfo_t;
+
+        typedef union
+        {
+                uint64_t qw[8];
+
+                struct
+                {
+                        TaskBufInfo_t taskBufInfo;
+                        uint64_t      adminCmdOpcode : 4;
+                        uint64_t      numSlaveMu     : 4;
+                        uint64_t      rsvd           : 58;
+                        uint64_t      threadBitmap; // qw4
+                        uint64_t      argc;
+                        uint64_t      rsvd2;
+                };
+        } MxTaskCmd_t;
+
+        typedef union
+        {
+                uint64_t qw[8];
+
+                struct
+                {
+                        uint32_t outputOverFlow;
+                        uint32_t adminOutstandingCnt;
+                        uint32_t adminStartCycle;
+                        uint32_t adminEndCycle;
+                        uint32_t masterStartCycle;
+                        uint32_t masterEndCycle;
+                        uint32_t slaveStartCycle;
+                        uint32_t slaveEndCycle;
+                        uint32_t slaveExecStartCycle;
+                        uint32_t slaveExecEndCycle;
+                        uint64_t rsvd0;
+                        uint64_t rsvd1;
+                        uint64_t rsvd2;
+                };
+        } MxTaskDbgInfo_t;
 
     private:
         uint64_t             _muHeader;
-        void*                _taskCmd;
-        void*                _debugInfo;
+        MxTaskCmd_t          _taskCmd;
+        MxTaskDbgInfo_t      _debugInfo;
         uint64_t             _paramBufAddr;
         bool                 _isReleased;
         bool                 _isDebug;
-        bool                 _isSync;
+        int                  _isSync;
         uint64_t             _taskTag;
         std::vector<void*>   _taskInputBufList;
         std::queue<uint64_t> _taskInOutBufQueue;

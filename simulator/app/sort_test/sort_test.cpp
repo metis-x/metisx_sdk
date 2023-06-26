@@ -1,6 +1,7 @@
 #include "sort_test.hpp"
 
 #include "metisx_api.h"
+#include "metisx_alveo_sim.hpp"
 
 #if _SIM_
 int hostAppSortTest(int argc, const char *argv[])

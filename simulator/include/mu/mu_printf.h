@@ -55,6 +55,9 @@
                 flushL0Pool(L0_POOL0_DDR_MU_DATA);              \
                 invdL1Pool(L1_POOL0_MU_DATA_0);                 \
                 invdL1Pool(L1_POOL1_MU_DATA_1);                 \
+                invdL1Pool(L1_POOL2_MU_DATA_2);                 \
+                invdL1Pool(L1_POOL3_MU_DATA_3);                 \
+                invdL1Pool(L1_POOL4_MU_DATA_4);                 \
                 __sync_print();                                 \
             } while(0);
     #elif (_MASTER_ || _ADMIN_)

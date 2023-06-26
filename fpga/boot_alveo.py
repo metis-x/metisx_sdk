@@ -77,7 +77,7 @@ def get_num_fpga():
     return numFpga_proc + numFpga_serial
 
 def make_sourceme():
-    with open('sourceme', "w") as file:
+    with open('scripts/sourceme', "w") as file:
         file.write(f'#!/bin/bash\n')
         file.write(f'export METISX_API_PATH={os.path.dirname(os.path.abspath(__file__))}/metisx_api/\n')
         file.write(f'alias cli="sudo python3 {os.path.dirname(os.path.abspath(__file__))}/cli/cli.py"\n')
