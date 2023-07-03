@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdint.h>
 namespace metisx
 {
 
@@ -9,6 +9,12 @@ enum class ExecuteType : int
 {
     Async,
     Sync,
+};
+
+enum class Debug : uint32_t
+{
+    Disable,
+    Enable,
 };
 
 }

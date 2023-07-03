@@ -6,6 +6,8 @@
 #include <functional>
 #include <pthread.h>
 #include "../util/metisx_logger.hpp"
+#include "../metisx_api_const.h"
+#include "../metisx_api_map_impl.hpp"
 
 namespace metisx
 {
@@ -24,30 +26,24 @@ typedef struct
 
 class Job
 {
-    private:
+    public:
         static constexpr uint32_t InvalidJobId          = UINT32_MAX;
+    private:
         static constexpr uint32_t InvalidClusterId      = UINT32_MAX;
         static constexpr uint32_t LogSize               = 5000;
-        static constexpr uint32_t TimeOutThreshold      = 30;
-        static constexpr uint8_t  ENABLE_DEBUG          = 1;
-        static constexpr uint8_t  DISABLE_DEBUG         = 0;
         static constexpr uint64_t INVALID_THREAD_BITMAP = 0x0ull;
         static constexpr uint8_t  ASSIGNED_DEVICE       = 1;
         static constexpr uint8_t  UNASSIGNED_DEVICE     = 0;
 
         bool                              _isInitDone;
-        uint32_t                          _jobId;
         bool                              _monitor;
         bool                              _isReleased;
-        uint32_t                          _aggrCmdCnt;
-        ssize_t                           _numAllocatedThread;
+        uint32_t                          _jobId;
         uint64_t                          _threadBitmap;
         uint32_t                          _numSlaveMu;
         std::vector<GlobalDataInfo_t>     _jobDataList;
         std::vector<std::vector<uint8_t>> _isAssignedDevice;
 
-        std::mutex                            _cntMutex;
-        std::mutex                            _mapMutex;
         metisx::api::util::JobLogger<LogSize> _defaultLogger;
 
     private:
@@ -56,7 +52,7 @@ class Job
         void     _updateThreadBitmapToDevice();
 
     public:
-        void init(ssize_t jobId = InvalidJobId, uint32_t numThread = 0, uint8_t debug = DISABLE_DEBUG);
+        void init(ssize_t jobId = InvalidJobId, uint32_t numThread = 0, uint32_t debug = static_cast<uint32_t>(metisx::api::Debug::Disable));
         void release(void);
         void loadProgram(const char* file, uint32_t clusterId = InvalidClusterId, uint8_t fpgaId = 0);
 
@@ -74,7 +70,12 @@ class Job
         double getSlaveUtil(void);
         void   setThreadBitmap(uint32_t numSlaveMu, uint64_t threadBitmap);
 
-    public:
+        template <typename... ARGS>
+        void map(ARGS... args)
+        {
+            metisx::api::impl::mxMapImpl(_jobId, args...);
+        }
+
         size_t getJobId(void) const
         {
             return _jobId;

@@ -27,7 +27,7 @@ static constexpr uint32_t MAX_MASTER_MS_PER_DEVICE      = 32;
 #if _SIM_
 static constexpr uint64_t SIM_NUM_CORE                  = 1;
 static constexpr uint64_t SIM_ADM_PER_SUB               = 1;
-static constexpr uint64_t SIM_CLUSTER_BITMAP            = 0xFul;
+static constexpr uint64_t SIM_CLUSTER_BITMAP            = 0xF0Ful;
 static constexpr uint32_t SIM_NUM_MU_PER_CLUSTER        = 8;
 static constexpr uint32_t SIM_NUM_THREAD_PER_CLUSTER    = SIM_NUM_MU_PER_CLUSTER * NUM_THREAD_PER_MU;
 #endif

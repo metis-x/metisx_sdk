@@ -181,7 +181,7 @@ void* MUAllocator::realloc(void* src, uint64_t src_size, uint64_t dst_size, uint
     srcAddress = stripHistoryBufIdx(srcAddress);
         #endif
     uint64_t alignSrcSize = alignMuAllocUnitSize(src_size);
-    if (srcAddress >= MEM_START(DDR_TASK_INPUT) || alignSrcSize < dst_size)
+    if (srcAddress >= MEM_START(DDR_TASK_ARG) || alignSrcSize < dst_size)
     {
         // malloc condition
         // 1. src is not MU_DRAM_V area (e.g., input buffer)
@@ -199,7 +199,7 @@ void* MUAllocator::realloc(void* src, uint64_t src_size, uint64_t dst_size, uint
                 memcpy(ret, src, src_size);
             }
 
-            if (srcAddress < MEM_START(DDR_TASK_INPUT))
+            if (srcAddress < MEM_START(DDR_TASK_ARG))
             {
                 free(src);
             }
@@ -388,7 +388,7 @@ void* MUAllocator::realloc(void* src, uint64_t src_size, uint64_t dst_size, uint
 
     if (likely(src != nullptr))
     {
-        if (srcAddress >= MEM_START(DDR_TASK_INPUT) || curPoolBufferSize < dst_size)
+        if (srcAddress >= MEM_START(DDR_TASK_ARG) || curPoolBufferSize < dst_size)
         {
             void* ret = alloc(dst_size, alignBit);
             if (likely(ret != nullptr))

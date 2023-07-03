@@ -116,10 +116,10 @@ inline uint64_t _getAddrOnL1Pool(uint64_t pool)
         return (MEM_START(DDR_SLAVE_MEM_CLST0_MU6)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
     case L1_POOL4_MU_DATA_4:
         return (MEM_START(DDR_SLAVE_MEM_CLST0_MU8)) + MEM_SIZE(DDR_SLAVE_MEM_CLST0) * _getVirtualClusterId();
-    case L1_POOL5_TASK_INPUT:
-        return MEM_START(DDR_TASK_INPUT);
-    case L1_POOL6_TASK_OUTPUT:
-        return MEM_START(DDR_TASK_OUTPUT);
+    case L1_POOL5_TASK_ARG1:
+        return MEM_START(DDR_TASK_ARG);
+    case L1_POOL6_TASK_ARG2:
+        return MEM_START(DDR_TASK_ARG) + (MEM_SIZE(DDR_TASK_ARG) / 2);
     case L1_POOL7_HOST_HEAP:
         return MEM_START(DDR_HOST_HEAP);
     default:
@@ -258,8 +258,9 @@ inline void setGlobalCtm(uint64_t addr, uint32_t val)
 #endif    
 }
 
-inline uint64_t getGmonTid(MuHeader muHeader)
+inline uint64_t getGmonTid(uint64_t header)
 {
+    MuHeader muHeader(header);
     uint64_t tid = (muHeader.clusterMuId & 0x3f) | (muHeader.clusterId << 6) | (muHeader.subId << 8);
     return tid;
 }

@@ -229,6 +229,6 @@ void setMpu(MuHeader muHeader)
 void invdCache(void)
 {
     invdL0Pool(L0_POOL1_DDR_HOST_DATA);
-    invdL1Pool(L1_POOL5_TASK_INPUT);
-    flushL1Pool(L1_POOL6_TASK_OUTPUT);
+    invdL1Pool(L1_POOL5_TASK_ARG1);
+    invdL1Pool(L1_POOL6_TASK_ARG2);
 }

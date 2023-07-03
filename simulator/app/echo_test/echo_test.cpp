@@ -19,12 +19,9 @@ int main(int argc, const char *argv[])
     const char* filename = argv[2];
         
     // input setup
-    size_t argType = static_cast<size_t>(metisx::api::wrapper::ArgType::Input);
-    void* arg = metisx::api::wrapper::mxMallocDecl(sizeof(void*), testCount, argType);
+    auto arg = metisx::api::make_metisx<void*>(testCount, metisx::api::ArgType::Input);
 
-    metisx::api::wrapper::mxMap(filename, arg);
-
-    metisx::api::wrapper::mxFreeDecl(arg);
-
+    metisx::api::mxMap(filename, arg);
+    
     return 0;
 }

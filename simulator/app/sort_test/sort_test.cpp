@@ -21,10 +21,8 @@ int main(int argc, const char *argv[])
     int size = 100;
     
     // input setup
-    size_t argType = static_cast<size_t>(metisx::api::wrapper::ArgType::Input) | static_cast<size_t>(metisx::api::wrapper::ArgType::Output);
-    void* arg = metisx::api::wrapper::mxMallocDecl(sizeof(int) * size, testCount, argType);
+    auto arr = metisx::api::make_metisx<int[100]>(testCount, metisx::api::ArgType::Both);
 
-    int (*arr)[100] = (int(*)[100])arg;
     for(int i = 0 ; i < testCount; i++)
     {
         for(int j = 0; j < size; j++)
@@ -33,7 +31,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    metisx::api::wrapper::mxMap(filename, arg, size);
+    metisx::api::mxMap(filename, arr, size);
     
     // verify
     for(int i = 0 ; i < testCount; i++)
@@ -43,7 +41,6 @@ int main(int argc, const char *argv[])
             assert(arr[i][j] == j + 1);
         }
     }
-    metisx::api::wrapper::mxFreeDecl(arg);
 
     return 0;
 }

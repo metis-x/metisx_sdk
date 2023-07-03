@@ -19,7 +19,6 @@ class MetisExecuter
 {
     private:
         const uint64_t        MU_HEADER_HOST_MASK = 0xFFFFFFFF00000000ull;
-        static const uint64_t DefaultBufSize      = 128 * 1024;
 
     private:
         std::map<uint64_t, metisx::api::wrapper::Task*>                _pendingTaskMap;
@@ -29,7 +28,7 @@ class MetisExecuter
 
     public:
         void               init(uint32_t maxNumOutstandingTask);
-        bool               enqueueTask(metisx::api::wrapper::Task* mxTaskPtr, uint64_t outputBufSize = DefaultBufSize);
+        bool               enqueueTask(metisx::api::wrapper::Task* mxTaskPtr, uint64_t outputBufSize = 0);
         metisx::api::wrapper::Task* dequeueTask(void);
 
     public:
