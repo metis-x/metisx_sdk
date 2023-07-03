@@ -59,16 +59,8 @@ struct CLASS_NAME : SLAVE_MU_PARENT
         
     }
 
-	void run(uint64_t header)
+	void run(uint64_t header, int argc, void** argv)
 	{
-      MuHeader muHeader;
-      muHeader.u64 = header;
-      MxTaskCmd_t* taskCmd = getTaskCmdByHeader(muHeader);
-      uint64_t argc = taskCmd->argc;
-      uint64_t argv = taskCmd->taskBufInfo.inputParamAddr;
-      void* args[argc];
-      memcpy(args, (void*)argv, sizeof(void*) * argc);
-      
-      quick_sort((int*)args[0], (uint64_t)args[1]);
+        quick_sort(reinterpret_cast<int*>(argv[0]), reinterpret_cast<uint64_t>(argv[1]));
 	}
 }; 

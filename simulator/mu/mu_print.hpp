@@ -11,7 +11,7 @@ struct CLASS_NAME : SLAVE_MU_PARENT
 
     }
     
-	void run(uint64_t header)
+	void run(uint64_t header, int argc, void** argv)
 	{
 		MuHeader muHeader;
 		muHeader.u64 = header;
